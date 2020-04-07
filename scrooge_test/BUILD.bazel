@@ -1,0 +1,46 @@
+load("@io_bazel_rules_scala//scala:scala.bzl", "scala_binary", "scala_macro_library")
+load("//lib/scrooge:scrooge.bzl", "scrooge_gen")
+
+scala_binary(
+    name = "scrooge_generator",
+    srcs = [],
+    main_class = "com.twitter.scrooge.Main",
+    deps = [
+        "@maven//:com_twitter_scrooge_generator_2_12",
+    ]
+)
+
+scrooge_gen(
+    name = "compile_thrift",
+    scrooge_binary = ":scrooge_generator",
+    thrift_files = glob(["src/main/thrift/*.thrift"]),
+)
+
+# Hack so rules_scala does not generate an ijar
+scala_macro_library(
+    name = "finagle",
+    srcs = [":compile_thrift"],
+    deps = [
+        "@maven//:com_twitter_finagle_core_2_12",
+        "@maven//:com_twitter_finagle_thrift_2_12",
+        "@maven//:com_twitter_util_stats_2_12",
+        "@maven//:com_twitter_util_core_2_12",
+        "@maven//:com_twitter_scrooge_core_2_12",
+        "@maven//:org_apache_thrift_libthrift",
+    ],
+)
+
+scala_binary(
+    name = "runner",
+    srcs = glob(["src/main/scala/**/*.scala"]),
+    main_class = "com.tally.playground.Runner",
+    deps = [
+        ":finagle",
+        "@maven//:com_twitter_finagle_core_2_12",
+        "@maven//:com_twitter_finagle_thrift_2_12",
+        "@maven//:com_twitter_util_stats_2_12",
+        "@maven//:com_twitter_util_core_2_12",
+        "@maven//:com_twitter_scrooge_core_2_12",
+        "@maven//:org_apache_thrift_libthrift",
+    ]
+)
